@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ماشین حساب فارسی</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; display: flex; justify-content: center; background: #f5f5f5; }
+  .calc { width: 320px; background: #fff; padding: 20px; border-radius: 20px; box-shadow: 0 0 20px rgba(0, 0, 0, 0.1); }
+  #display { width: 100%; height: 60px; font-size: 32px; text-align: right; padding: 10px; border-radius: 12px; border: none; background: #fafafa; }
+  #totalBox { margin-top: 20px; width: 100%; font-size: 20px; text-align: right; padding: 10px; border-radius: 12px; border: none; background: #e8fff3; color: #006c4f; max-height: 200px; overflow-y: auto; white-space: pre-line; }
+  .buttons { margin-top: 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  button { height: 60px; font-size: 25px; border: none; border-radius: 15px; background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); cursor: pointer; }
+  button.op { color: #ff8c00; }
+  #equal { background: #ff8c00; color: white; }
+  #addTotal { background: #009688; color: white; grid-column: span 4; height: 55px; margin-top: 15px; }
+  #clearTotalBtn { margin-top:10px; width:100%; height:45px; background:#d32f2f; color:white; border:none; border-radius:12px; }
+</style>
+</head>
+<body>
+<div class="calc">
+<input id="display" value="0" disabled />
+<div class="buttons">
+  <button onclick="clearAll()">C</button>
+  <button onclick="backspace()" class="op">⌫</button>
+  <button onclick="press('%')" class="op">%</button>
+  <button onclick="press('/')" class="op">÷</button>
+
+  <button onclick="press('7')">7</button>
+  <button onclick="press('8')">8</button>
+  <button onclick="press('9')">9</button>
+  <button onclick="press('*')" class="op">×</button>
+
+  <button onclick="press('4')">4</button>
+  <button onclick="press('5')">5</button>
+  <button onclick="press('6')">6</button>
+  <button onclick="press('-')" class="op">−</button>
+
+  <button onclick="press('1')">1</button>
+  <button onclick="press('2')">2</button>
+  <button onclick="press('3')">3</button>
+  <button onclick="press('+')" class="op">+</button>
+
+  <button onclick="press('0')">0</button>
+  <button onclick="press('.')">.</button>
+  <button id="equal" onclick="calculate()">=</button>
+</div>
+<button id="addTotal" onclick="addToTotal()">➕ افزودن به فاکتور</button>
+<div id="totalBox"></div>
+<button id="clearTotalBtn" onclick="clearTotal()">🗑 پاک کردن جمع فاکتور</button>
+</div>
+<script>
+let total = 0;
+let currentInputRaw = '0';
+let totalLines = [];
+
+function formatNumberDisplay(numStr) {
+  if (numStr === '') return '0';
+  let parts = numStr.split(/([+\-*/])/);
+  return parts.map(p => {
+    if (/[%]/.test(p) || /[+\-*/]/.test(p)) return p;
+    if (/\d+(\.\d+)?/.test(p)) return Number(p).toLocaleString('en-US');
+    return p;
+  }).join('');
+}
+
+function press(val) {
+  if (currentInputRaw === '0' && /\d/.test(val)) currentInputRaw = '';
+  currentInputRaw += val;
+  display.value = formatNumberDisplay(currentInputRaw);
+}
+
+function clearAll() {
+  currentInputRaw = '0';
+  display.value = '0';
+}
+
+function backspace() {
+  currentInputRaw = currentInputRaw.slice(0, -1);
+  if (currentInputRaw === '') currentInputRaw = '0';
+  display.value = formatNumberDisplay(currentInputRaw);
+}
+
+function calculate() {
+  try {
+    let exp = currentInputRaw;
+    exp = exp.replace(/(\d+(?:\.\d+)?)\s*([+\-])\s*(\d+(?:\.\d+)?)%/g, (match, num1, op, num2) => {
+      return op === '+' ? `${num1}+(${num1}*${num2}/100)` : `${num1}-(${num1}*${num2}/100)`;
+    });
+    exp = exp.replace(/(\d+(?:\.\d+)?)%/g, '($1/100)');
+    let result = Function('return ' + exp)();
+    currentInputRaw = result.toString();
+    display.value = Number(result).toLocaleString('en-US');
+    return result;
+  } catch {
+    display.value = 'Error';
+    currentInputRaw = '0';
+    return 0;
+  }
+}
+
+function addToTotal() {
+  let val = calculate();
+  total += val;
+  totalLines.push(Number(val).toLocaleString('en-US'));
+  totalBox.innerText = totalLines.map((v,i) => `کالای ${i+1}: ${v}`).join('\n') + `\n----------------\nجمع کل: ${Number(total).toLocaleString('en-US')}`;
+  currentInputRaw = '0';
+  display.value = '0';
+}
+
+function clearTotal() {
+  total = 0;
+  totalLines = [];
+  totalBox.innerText = '';
+  currentInputRaw = '0';
+  display.value = '0';
+}
+</script>
+</body>
+</html>
